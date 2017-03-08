@@ -1,4 +1,4 @@
-# pci-bind-vfio
+# vfio-pci-bind
 
 This script takes a Domain:Bus:Device.Function string of the form "0000:00:00.0" as command line argument and:
 

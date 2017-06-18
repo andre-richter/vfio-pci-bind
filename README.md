@@ -12,6 +12,6 @@ This script takes a Domain:Bus:Device.Function string of the form "0000:00:00.0"
 
 __Script must be executed via sudo!__
 
-##License
+## License
 
 See supplied LICENSE file.

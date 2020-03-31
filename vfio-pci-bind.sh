@@ -82,7 +82,7 @@ for dsp in $TARGET_DEV_SYSFS_PATH/iommu_group/devices/*
 do
     dbdf=${dsp##*/}
     if [[ $(( 0x$(setpci -s $dbdf 0e.b) & 0x7f )) -eq 0 ]]; then
-	dev_sysfs_paths+=( $dsp )
+        dev_sysfs_paths+=( $dsp )
     fi
 done
 
@@ -104,16 +104,16 @@ do
     echo "vfio-pci" > "$dsp/driver_override"
 
     if [[ -d $dpath ]]; then
-	curr_driver=$(readlink $dpath)
-	curr_driver=${curr_driver##*/}
+        curr_driver=$(readlink $dpath)
+        curr_driver=${curr_driver##*/}
 
-	if [[ $curr_driver -ne "vfio-pci" ]]; then
-	    echo "$dbdf already bound to vfio-pci"
-	    continue
-	else
-	    echo $dbdf > "$dpath/unbind"
-	    echo "Unbound $dbdf from $curr_driver"
-	fi
+        if [[ "$curr_driver" == "vfio-pci" ]]; then
+            echo "$dbdf already bound to vfio-pci"
+            continue
+        else
+            echo $dbdf > "$dpath/unbind"
+            echo "Unbound $dbdf from $curr_driver"
+        fi
     fi
 
     echo $dbdf > /sys/bus/pci/drivers_probe

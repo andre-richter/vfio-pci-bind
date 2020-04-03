@@ -1,13 +1,15 @@
 # vfio-pci-bind
 
-This script takes two parameters:
+This script takes one or two parameters in any order:
 
-- `Domain:Bus:Device.Function` (required) i.e. `0000:00:00.0`
-- `Vendor:Device` (optional) i.e. `0000:0000`
+- `Vendor:Device` i.e. `vvvv:dddd`
+- `Domain:Bus:Device.Function` i.e. `dddd:vv:dd.f`
 
 and then:
 
-1. Verifies that the optional `Vendor:Device` matches the Vendor:Device currently at the requested `Domain:Bus:Device.Function` PCI address. If they do not match, exit without binding the requested PCI address. The goal is to prevent the wrong device from being bound to vfio-pci after a hardware change.
+1. If both `Vendor:Device` and `Domain:Bus:Device.Function` were provided, validate that the requested `Vendor:Device` exists at `Domain:Bus:Device.Function`
+   If only `Vendor:Device` was provided, determine the current `Domain:Bus:Device.Function` for that device.
+   If only `Domain:Bus:Device.Function` was provided, use it.
 2. Unbinds all devices that are in the same iommu group as the supplied device from their current driver (except PCIe bridges).
 3. Binds to vfio-pci:
    1. The supplied device.

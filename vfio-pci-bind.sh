@@ -32,16 +32,18 @@
 #
 # =============================================================================
 #
-# This script takes two parameters:
-#   <Domain:Bus:Device.Function> (required) i.e. 0000:00:00.0
-#   <Vendor:Device> (optional) i.e. 0000:0000
+# This script takes one or two parameters in any order:
+#   <Vendor:Device> i.e. vvvv:dddd
+#   <Domain:Bus:Device.Function> i.e. dddd:bb:dd.f
 # and then:
 #
-#  (1) Verifies that the optional <Vendor:Device> matches the Vendor:Device 
-#      currently at the requested <Domain:Bus:Device.Function> PCI address. 
-#      If they do not match, exit without binding the requested PCI address. 
-#      The goal is to prevent the wrong device from being bound to vfio-pci 
-#      after a hardware change.
+#  (1) If both <Vendor:Device> and <Domain:Bus:Device.Function> were provided,
+#      validate that the requested <Vendor:Device> exists at <Domain:Bus:Device.Function>
+#
+#      If only <Vendor:Device> was provided, determine the current 
+#      <Domain:Bus:Device.Function> for that device.
+#
+#      If only <Domain:Bus:Device.Function> was provided, use it.
 #
 #  (2) Unbinds all devices that are in the same iommu group as the supplied
 #      device from their current driver (except PCIe bridges).
@@ -64,14 +66,44 @@ if [[ $EUID -ne 0 ]]; then
     exit 1
 fi
 
-if [[ $1 =~ $DBDF_REGEX ]]; then
-    BDF=$1
-elif [[ $1 =~ $BDF_REGEX ]]; then
-    BDF="0000:$1"
-    echo "Warning: You did not supply a PCI domain, assuming $BDF" 1>&2
-else
-    echo "Error: Please supply Domain:Bus:Device.Function of PCI device in form: dddd:bb:dd.f" 1>&2
+if [[ -z "$@" ]]; then
+    echo "Error: Please provide Domain:Bus:Device.Function (dddd:bb:dd.f) and/or Version:Device (vvvv:dddd)" 1>&2
     exit 1
+fi
+
+unset VD BDF
+for arg in "$@"
+do
+    if [[ $arg =~ $VD_REGEX ]]; then
+        VD=$arg
+    elif [[ $arg =~ $DBDF_REGEX ]]; then
+        BDF=$arg
+    elif [[ $arg =~ $BDF_REGEX ]]; then
+        BDF="0000:${arg}"
+        echo "Warning: You did not supply a PCI domain, assuming ${BDF}" 1>&2
+    else
+        echo "Error: Please provide Version:Device (vvvv:dddd) and/or Domain:Bus:Device.Function (dddd:bb:dd.f)" 1>&2
+        exit 1
+    fi
+done
+
+# BDF not provided, find BDF for Vendor:Device
+if [[ -z $BDF ]]; then
+    COUNT=$(lspci -n -d ${VD} 2>/dev/null | wc -l)
+    if [[ $COUNT -eq 0 ]]; then
+        echo "Error: Vendor:Device ${VD} not found" 1>&2
+        exit 1
+    elif [[ $COUNT -gt 1 ]]; then
+        echo "Error: Multiple results for Vendor:Device ${VD}, please provide Domain:Bus:Device.Function (dddd:bb:dd.f) as well" 1>&2
+        exit 1
+    fi
+    BDF=$(lspci -n -d ${VD} 2>/dev/null | cut -d " " -f1)
+    if [[ $BDF =~ $BDF_REGEX ]]; then
+        BDF="0000:${BDF}"
+    elif [[ ! $BDF =~ $DBDF_REGEX ]]; then
+        echo "Error: Unable to find Domain:Bus:Device.Function for Vendor:Device ${VD}" 1>&2
+        exit 1
+    fi
 fi
 
 TARGET_DEV_SYSFS_PATH="/sys/bus/pci/devices/$BDF"
@@ -86,15 +118,16 @@ if [[ ! -d "$TARGET_DEV_SYSFS_PATH/iommu/" ]]; then
     exit 1
 fi
 
-if [[ $2 =~ $VD_REGEX ]]; then
-    if [[ $(lspci -n -s ${BDF} -d $2 2>/dev/null | wc -l) -eq 0 ]]; then
-        echo "Error: Vendor:Device $2 not found at ${BDF}, unable to bind device" 1>&2
+# validate that the correct Vendor:Device was found for this BDF
+if [[ ! -z $VD ]]; then
+    if [[ $(lspci -n -s ${BDF} -d ${VD} 2>/dev/null | wc -l) -eq 0 ]]; then
+        echo "Error: Vendor:Device ${VD} not found at ${BDF}, unable to bind device" 1>&2
         exit 1
     else
-        echo "Vendor:Device $2 found at ${BDF}"
+        echo "Vendor:Device ${VD} found at ${BDF}"
     fi
 else
-    echo "Warning: You did not specify a Vendor:Device in form vvvv:dddd, unable to validate ${BDF}" 1>&2
+    echo "Warning: You did not specify a Vendor:Device (vvvv:dddd), unable to validate ${BDF}" 1>&2
 fi
 
 unset dev_sysfs_paths
@@ -151,7 +184,7 @@ if [[ $? -ne 0 ]]; then
 fi
 
 printf "success...\n\n"
-echo "Device $2 at ${BDF} bound to vfio-pci"
+echo "Device ${VD} at ${BDF} bound to vfio-pci"
 echo 'Devices listed in /sys/bus/pci/drivers/vfio-pci:'
 ls -l /sys/bus/pci/drivers/vfio-pci | egrep [[:xdigit:]]{4}:
 printf "\nls -l /dev/vfio/\n"

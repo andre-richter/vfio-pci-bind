@@ -1,0 +1,25 @@
+# udev rules file that binds selected PCI devices to vfio-pci instead of
+# whatever driver udev and modprobe would ordinarily bind them to.
+#
+# This rules file should be located in /etc/udev/rules.d/
+# vfio-pci-bind.sh must be located in /lib/udev/ and must be executable.
+#
+ACTION!="add", GOTO="vfio_pci_bind_rules_end"
+SUBSYSTEM!="pci", GOTO="vfio_pci_bind_rules_end"
+
+
+# Identify PCI devices to be bound to vfio-pci using udev matching rules and
+# tag each device with "vfio-pci-bind".
+#
+# Example: Match any PCI device with <Vendor:Device> 1912:0014
+#   ATTR{vendor}=="0x1912", ATTR{device}=="0x0014", TAG="vfio-pci-bind"
+#
+# Example: Match the PCI device with <Domain:Bus:Device.Function> 0000:0b:00.0
+#  KERNEL=="0000:0b:00.0", TAG="vfio-pci-bind"
+#
+
+
+# Any device tagged by a rule above is bound to vfio-pci.
+#
+TAG=="vfio-pci-bind", RUN+="vfio-pci-bind.sh $kernel"
+LABEL="vfio_pci_bind_rules_end"

@@ -46,6 +46,14 @@ Suggestions:
 
 **Script must be executed via sudo!**
 
+## Automatically binding devices on boot
+
+Devices can be automatically bound to `vfio-pci` on boot using the supplied `25-vfio-pci-bind.rules` udev rules file.
+1. Copy `vfio-pci-bind.sh` to `/lib/udev/` and ensure it is marked executable.
+2. Copy `25-vfio-pci-bind.rules` to `/etc/udev/rules.d/`
+3. Edit `/etc/udev/rules.d/25-vfio-pci-bind.rules` and add PCI device matching rules following the examples in the file.
+4. Reboot.
+
 ## License
 
 See supplied LICENSE file.

@@ -82,7 +82,7 @@ do
         BDF="0000:${arg}"
         echo "Warning: You did not supply a PCI domain, assuming ${BDF}" 1>&2
     else
-        echo "Error: Please provide Version:Device (vvvv:dddd) and/or Domain:Bus:Device.Function (dddd:bb:dd.f)" 1>&2
+        echo "Error: Please provide Vendor:Device (vvvv:dddd) and/or Domain:Bus:Device.Function (dddd:bb:dd.f)" 1>&2
         exit 1
     fi
 done

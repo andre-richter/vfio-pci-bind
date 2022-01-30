@@ -67,7 +67,7 @@ if [[ $EUID -ne 0 ]]; then
 fi
 
 if [[ -z "$@" ]]; then
-    echo "Error: Please provide Domain:Bus:Device.Function (dddd:bb:dd.f) and/or Version:Device (vvvv:dddd)" 1>&2
+    echo "Error: Please provide Domain:Bus:Device.Function (dddd:bb:dd.f) and/or Vendor:Device (vvvv:dddd)" 1>&2
     exit 1
 fi
 

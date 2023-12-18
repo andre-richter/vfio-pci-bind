@@ -185,6 +185,11 @@ fi
 
 printf "success...\n\n"
 echo "Device ${VD} at ${BDF} bound to vfio-pci"
+echo "[Hint] if you want to unbind ${BDF}, run follow comand to unbind ${BDF} from vfio-pci,"
+echo "       echo ${BDF} > /sys/bus/pci/drivers/vfio-pci/unbind"
+
+printf '\n'
+
 echo 'Devices listed in /sys/bus/pci/drivers/vfio-pci:'
 ls -l /sys/bus/pci/drivers/vfio-pci | egrep [[:xdigit:]]{4}:
 printf "\nls -l /dev/vfio/\n"
